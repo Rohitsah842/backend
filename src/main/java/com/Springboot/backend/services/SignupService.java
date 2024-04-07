@@ -60,7 +60,7 @@ public class SignupService {
 			 throw  new ExceptionBadRequest(ex.getMessage());
 		}
 		}else {
-			throw new ExceptionUnAuthorized("User id already exists");
+			throw new ExceptionBadRequest("User id already exists");
 //			
 		}
 		
