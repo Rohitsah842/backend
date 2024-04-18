@@ -19,6 +19,7 @@ import com.Springboot.backend.entities.Customer;
 import com.Springboot.backend.exception.ExceptionBadRequest;
 import com.Springboot.backend.exception.ExceptionForbidden;
 import com.Springboot.backend.repository.CustomerRepository;
+import com.Springboot.backend.services.RefreshTokenService;
 
 
 @Component
@@ -29,13 +30,15 @@ public class CustomUsernamePasswordAthenticatonProvider implements Authenticatio
 
     @Autowired
     private PasswordEncoder passwordEncoder;
-
+    
+    
 
 	@Override
 	public Authentication authenticate(Authentication authentication) throws ExceptionForbidden {
 		String username = authentication.getName();
 		String password = authentication.getCredentials().toString();
 		Customer customer = customerRepository.findByEmail(username);
+		
 
 		if (customer!=null) {
 			if (passwordEncoder.matches(password, customer.getPassword())) {

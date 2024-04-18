@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Column;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 
 public class CustomerDto {
@@ -17,6 +18,10 @@ public class CustomerDto {
 	@NotNull
 	@Email
 	private String email;
+	
+	@NotNull
+//	@Pattern(regexp = "^(\\+\\[1-9]{1}\\[0-9]{3,14}$)")
+	private String mobileNo;
 	
 	
 	@NotNull
@@ -51,6 +56,15 @@ public class CustomerDto {
 
 	public void setEmail(String email) {
 		this.email = email;
+	}
+	
+
+	public String getMobileNo() {
+		return mobileNo;
+	}
+
+	public void setMobileNo(String mobileNo) {
+		this.mobileNo = mobileNo;
 	}
 
 	public String getAge() {

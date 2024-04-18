@@ -46,6 +46,7 @@ public class SignupService {
 			customer.setPassword(hashPwd);
 			customer.setFullname(customerDto.getFullname());
 			customer.setEmail(customerDto.getEmail());
+			customer.setMobileNo(customerDto.getMobileNo());
 			customer.setAge(customerDto.getAge());
 			customer.setRole(customerDto.getRole());
 			saveCustomer=customerRepo.save(customer);

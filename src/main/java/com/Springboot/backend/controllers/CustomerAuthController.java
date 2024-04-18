@@ -1,5 +1,7 @@
 package com.Springboot.backend.controllers;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,18 +12,29 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.Springboot.backend.config.CustomUsernamePasswordAthenticatonProvider;
+import com.Springboot.backend.constants.SecurityConstants;
+import com.Springboot.backend.customResponse.TokenResponse;
 import com.Springboot.backend.dto.CustomerDto;
-import com.Springboot.backend.dto.LoginDto;
+import com.Springboot.backend.dto.ForgetPasswordDto;
+import com.Springboot.backend.dto.RefreshTokenDto;
 import com.Springboot.backend.entities.Customer;
+import com.Springboot.backend.entities.RefreshToken;
+import com.Springboot.backend.exception.ExceptionBadRequest;
+import com.Springboot.backend.exception.ExceptionUnAuthorized;
 import com.Springboot.backend.repository.CustomerRepository;
+import com.Springboot.backend.services.ForgetPasswordService;
+import com.Springboot.backend.services.JwtService;
+import com.Springboot.backend.services.RefreshTokenService;
 import com.Springboot.backend.services.SignupService;
-
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
 @RestController
@@ -31,10 +44,22 @@ public class CustomerAuthController {
 	SignupService signService;
 	
 	@Autowired
+	ForgetPasswordService forgetPasswordService;
+	
+	@Autowired
 	AuthenticationManager customAuthenticationManager;
 	
 	@Autowired
 	CustomerRepository customerRepo;
+	
+	@Autowired
+	RefreshTokenService refreshTokenService;
+	
+	@Autowired
+	JwtService jwtService;
+	
+	
+	
 	
 	@PostMapping("/signup")
 	public ResponseEntity<?> signup(@RequestBody @Valid CustomerDto customerDto){
@@ -49,28 +74,10 @@ public class CustomerAuthController {
 	}
 	
 	@GetMapping("/auth/test")
-	public ResponseEntity<?> authTestController() {
-		System.out.println("Hello");
-		return ResponseEntity.ok(customerRepo.findAll());
+	public List<Customer> authTestController() {
+		return customerRepo.findAll();
 	}
 	
-//	@PostMapping("/signin")
-//	public ResponseEntity<String> customerLogin(@RequestBody LoginDto loginDto) throws Exception{
-//		Authentication authObj;
-//		
-//		try {
-//			
-//			authObj=customAuthenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginDto.getEmail(),loginDto.getPassword()));
-//			System.out.println(authObj);
-//			SecurityContextHolder.getContext().setAuthentication(authObj);
-//		}catch(Exception e) {
-//			throw new Exception("Invaild credential"+ e.getMessage());
-//		}
-//		
-//		test();
-//		return ResponseEntity.status(HttpStatus.ACCEPTED).body("User login succsesfully");
-//		
-//	}
 	
 	
 	@RequestMapping("/user")
@@ -83,5 +90,51 @@ public class CustomerAuthController {
         }
 
     }
+	
+	@PostMapping("/verify-user")
+	public ResponseEntity<?>verifyUser(@RequestBody ForgetPasswordDto forgetPasswordDto ){
+		
+		return forgetPasswordService.verifyUserEmailOrMob(forgetPasswordDto.getEmail(), forgetPasswordDto.getMobileNo());
+	}
+	
+	@PostMapping("/forget-password")
+	public ResponseEntity<?> resetPassword(@RequestBody ForgetPasswordDto forgetPasswordDto){
+		return forgetPasswordService.customerResetPassword(forgetPasswordDto);
+	}
+	
+	@PostMapping("/refresh-token")
+	public ResponseEntity<?> generateRefreshToken(@RequestBody RefreshTokenDto refreshTokenDto, HttpServletResponse response){
+		
+		try {
+			RefreshToken tokenId= refreshTokenService.findRefreshToken(refreshTokenDto.getToken());
+			RefreshToken token=refreshTokenService.verifyRefreshToken(tokenId);
+			String emailId=token.getCustomer().getEmail();
+			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+			System.out.println(authentication.getPrincipal()+" -"+authentication.getCredentials());
+			String jwtToken= jwtService.createJwtToken(authentication);
+			String newRefreshToken=refreshTokenService.createRefreshToken(emailId).getToken();
+//			Cookie jwtCookie = new Cookie("Authorization",jwtToken);
+//			jwtCookie.setPath("/");
+//			jwtCookie.setMaxAge(SecurityConstants.JWT_EXPIRE_TIME);
+//			jwtCookie.setSecure(true);
+//			jwtCookie.setHttpOnly(true);
+//			response.addCookie(jwtCookie);
+//			
+//			Cookie refreshTokenCookie = new Cookie("RefreshToken",newRefreshToken);
+//			refreshTokenCookie.setPath("/");
+////			refreshTokenCookie.setSecure(true);
+////			refreshTokenCookie.setHttpOnly(true);
+//			response.addCookie(refreshTokenCookie);
+			TokenResponse tokenResponse=TokenResponse
+			.builder()
+			.jwtToken(jwtToken)
+			.refreshToken(newRefreshToken)
+			.build();
+			return ResponseEntity.status(HttpStatus.OK).body( tokenResponse);
+		}catch(Exception e) {
+			throw new ExceptionUnAuthorized("Invaild refresh token id or expired");
+		}
+	}
+		
 
 }

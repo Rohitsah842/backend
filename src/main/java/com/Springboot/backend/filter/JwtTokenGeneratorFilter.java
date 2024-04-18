@@ -1,27 +1,18 @@
 package com.Springboot.backend.filter;
 
 import java.io.IOException;
-
-import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.Springboot.backend.constants.SecurityConstants;
-import com.Springboot.backend.exception.ExceptionForbidden;
+import com.Springboot.backend.services.JwtService;
+import com.Springboot.backend.services.RefreshTokenService;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -32,28 +23,39 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-
+@Component
 public class JwtTokenGeneratorFilter extends OncePerRequestFilter {
+	
+	@Autowired
+	private RefreshTokenService refreshTokenService;
+	
+	@Autowired
+	public JwtService jwtService;
 	
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		 
         if (null != authentication) {
 
-            String jwt = Jwts.builder()
-            		.setIssuer("Eazy Bank")
-            		.setSubject("JWT Token")
-                   .claim("username", authentication.getName()) 
-//                    .claim("authorities", authentication.getAuthorities())
-                    .setIssuedAt(new Date())
-                    .setExpiration(new Date((new Date()).getTime() + 24*60*60*1000))
-                    .signWith(getSignKey(), SignatureAlgorithm.HS256).compact();
-            System.out.println(jwt);
-            response.setHeader(SecurityConstants.JWT_HEADER, jwt);
+//            String jwt = Jwts.builder()
+//            		.setIssuer("Eazy Bank")
+//            		.setSubject("JWT Token")
+//                   .claim("username", authentication.getName()) 
+////                    .claim("authorities", authentication.getAuthorities())
+//                    .setIssuedAt(new Date())
+//                    .setExpiration(new Date((new Date()).getTime() + JWT_EXPIRE_TIME))
+//                    .signWith(getSignKey(), SignatureAlgorithm.HS256).compact();
+        	String jwtToken=jwtService.createJwtToken(authentication);
+            String refreshToken=refreshTokenService.createRefreshToken(authentication.getName()).getToken();
+            System.out.println(refreshToken);
+            response.setHeader(SecurityConstants.JWT_HEADER, jwtToken);
+//            response.setHeader(SecurityConstants.REFRESH_TOKEN, refreshToken);
+            response.addHeader(SecurityConstants.REFRESH_TOKEN, refreshToken);
         }else {
-        	throw new ExceptionForbidden("Email or password Invalid ");
+        	response.sendError(401, "Email id or password is incorrect");
         }
 
         filterChain.doFilter(request, response);
@@ -67,13 +69,13 @@ public class JwtTokenGeneratorFilter extends OncePerRequestFilter {
 //	private String populateAuthorities(String role) {
 //        List<GrantedAuthority> authorities = new ArrayList<>();
 //		authorities.add(new SimpleGrantedAuthority(role));
-//        return String.join(",", authorities);
+//        return String.join(',', authorities);
 //    }
 	
-private Key getSignKey() {
-		
-		byte[] keyBytes=Decoders.BASE64.decode(SecurityConstants.JWT_KEY);
-		return Keys.hmacShaKeyFor(keyBytes);
-	}
+//private Key getSignKey() {
+//		
+//		byte[] keyBytes=Decoders.BASE64.decode(SecurityConstants.JWT_KEY);
+//		return Keys.hmacShaKeyFor(keyBytes);
+//	}
 
 }

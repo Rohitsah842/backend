@@ -4,6 +4,7 @@ import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import com.Springboot.backend.exception.ExceptionBadRequest;
@@ -15,6 +16,7 @@ import java.util.Base64;
 
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
+@Component
 public class RequestValidationBeforeFilter implements Filter{
 	
 	public static final String AUTHENTICATION_SCHEME_BASIC = "Basic";

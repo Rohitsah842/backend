@@ -9,6 +9,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 
 @Entity
 public class Customer {
@@ -26,6 +28,9 @@ public class Customer {
 	@Column(name = "email")
 	private String email;
 	
+	@Column(name = "mobile_no")
+	private String mobileNo;
+	
 	@Column(name = "customer_age")
 	private String age;
 	
@@ -40,6 +45,8 @@ public class Customer {
 	
 	@Column(name = "Create_date")
 	private String createDate;
+	
+	
 
 	public int getId() {
 		return id;
@@ -64,6 +71,15 @@ public class Customer {
 
 	public void setEmail(String email) {
 		this.email = email;
+	}
+	
+
+	public String getMobileNo() {
+		return mobileNo;
+	}
+
+	public void setMobileNo(String mobileNo) {
+		this.mobileNo = mobileNo;
 	}
 
 	public String getAge() {

@@ -3,17 +3,19 @@ package com.Springboot.backend.config;
 import java.util.Arrays;
 import java.util.Collections;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
@@ -24,11 +26,23 @@ import com.Springboot.backend.filter.CsrfCookieFilter;
 import com.Springboot.backend.filter.JwtTokenGeneratorFilter;
 import com.Springboot.backend.filter.JwtTokenValidator;
 import com.Springboot.backend.filter.RequestValidationBeforeFilter;
+import com.Springboot.backend.services.RefreshTokenService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
 @Configuration
+@EnableWebSecurity
+@EnableMethodSecurity
 public class ProjectSecurityConfig {
+	
+	@Autowired
+	private CsrfCookieFilter csrfCookieFilter;
+	
+	@Autowired
+	private JwtTokenGeneratorFilter jwtTokenGeneratorFilter;
+	
+	@Autowired
+	private JwtTokenValidator jwtTokenValidator;
 	
 	
 	
@@ -45,21 +59,21 @@ public class ProjectSecurityConfig {
                 config.setAllowedMethods(Collections.singletonList("*"));
                 config.setAllowCredentials(true);
                 config.setAllowedHeaders(Collections.singletonList("*"));
-                config.setExposedHeaders(Arrays.asList("Authorization"));
+                config.setExposedHeaders(Arrays.asList("Authorization", "RefreshToken"));
                 config.setMaxAge(3600L);
                 return config;
             }
-                })).csrf((csrf) -> csrf.csrfTokenRequestHandler(requestHandler).ignoringRequestMatchers("/contact","/signup", "/test")
+                })).csrf((csrf) -> csrf.csrfTokenRequestHandler(requestHandler).ignoringRequestMatchers("/forget-password","/signup", "/test", "/verify-user", "/refresh-token")
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
-                .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+                .addFilterAfter( csrfCookieFilter, BasicAuthenticationFilter.class)
                 .addFilterBefore(new RequestValidationBeforeFilter(), BasicAuthenticationFilter.class)
 //                .addFilterAt(new AuthoritiesLoggingAtFilter(),BasicAuthenticationFilter.class)
 //                .addFilterAfter(new AuthoritiesLoggingAfterFilter(), BasicAuthenticationFilter.class)
-                .addFilterAfter(new JwtTokenGeneratorFilter(), BasicAuthenticationFilter.class)
-                .addFilterBefore(new JwtTokenValidator(), BasicAuthenticationFilter.class)
+                .addFilterAfter( jwtTokenGeneratorFilter, BasicAuthenticationFilter.class)
+                .addFilterBefore( jwtTokenValidator, BasicAuthenticationFilter.class)
 	            			.authorizeHttpRequests((requests)->requests
 	                        .requestMatchers("/user", "/auth/test").authenticated()
-	                        .requestMatchers("/notices","/signup","/signin", "/test","/forget-password").permitAll())
+	                        .requestMatchers("/verify-user","/signup","/signin", "/test","/forget-password", "/refresh-token").permitAll())
 	                .formLogin(Customizer.withDefaults())
 	                .httpBasic(Customizer.withDefaults());
 	        return http.build();
